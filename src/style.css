@@ -172,7 +172,7 @@ h1 { font-size: clamp(26px, 6.8vw, 32px); line-height: 1.35; letter-spacing: -.0
   .home-actions { bottom: 12px; }
   .story-toast { top: 132px; }
 }
-@media (max-height: 480px) and (min-width: 600px) {
+@media (max-height: 480px) and (min-width: 480px) {
   .site-header { flex-basis: 48px; min-height: 48px; }
   .home-heading { top: 16px; left: 20px; right: auto; width: 290px; padding: 12px 14px; border-radius: 14px; background: #f6f5edf0; text-align: left; }
   .home-heading h1 { font-size: 28px; }
@@ -197,5 +197,20 @@ h1 { font-size: clamp(26px, 6.8vw, 32px); line-height: 1.35; letter-spacing: -.0
   .result-heading { align-self: center; }
   .result-controls { grid-column: 2; grid-row: 1; }
   .result-note { margin-top: 6px; }
+}
+@media (max-height: 340px) and (min-width: 480px) {
+  .home-heading { top: 8px; left: 12px; width: 228px; padding: 10px; }
+  .home-heading h1 { font-size: 24px; }
+  .home-subtitle { display: none; }
+  .home-heading .best-record { margin-top: 8px; padding-left: 8px; padding-right: 8px; }
+  .home-actions { bottom: 10px; left: 12px; width: 200px; }
+  .start-button { min-height: 52px; }
+  .start-hint { margin-top: 6px; }
+  .race-hud { left: 8px; width: 224px; padding: 8px; }
+  .game-dialog { padding: 16px; }
+  .dialog-close { top: 8px; right: 8px; }
+  .help-steps { gap: 8px; margin: 10px 0; line-height: 1.45; }
+  .help-bottom { padding-top: 6px; }
+  .result-actions .primary-button, .result-actions .secondary-button { padding-left: 6px; padding-right: 6px; gap: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

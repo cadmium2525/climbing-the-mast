@@ -55,7 +55,7 @@ export function createUI(): void {
       <div class="result-layout">
         <div class="result-heading"><p id="result-label" class="result-label">月へ帰還</p><h2 id="result-title">おかえり、かぐや姫。</h2><p id="result-value" class="result-value">0:00.0</p><p id="result-description" class="dialog-intro">月で父と母が待っていました。</p></div>
         <div class="result-card-wrap"><canvas id="result-card" width="900" height="1200" aria-label="かぐや姫の月への帰還記録カード"></canvas></div>
-        <div class="result-controls"><div class="result-actions"><button id="share-button" class="primary-button" type="button">${icons.share}<span>シェア</span></button><button id="save-button" class="secondary-button" type="button">${icons.download}<span>カード保存</span></button><button id="x-share-button" class="text-button x-share-button" type="button">Xに投稿</button></div><button id="retry-button" class="retry-button" type="button">もう一度登る</button><p class="result-note" role="status">自己ベストはこの端末に保存されます。</p></div>
+        <div class="result-controls"><div class="result-actions"><button id="share-button" class="primary-button" type="button">${icons.share}<span>シェア</span></button><button id="save-button" class="secondary-button" type="button">${icons.download}<span>画像保存</span></button><button id="x-share-button" class="text-button x-share-button" type="button">Xに投稿</button></div><button id="retry-button" class="retry-button" type="button">もう一度登る</button><p class="result-note" role="status">自己ベストはこの端末に保存されます。</p></div>
       </div>
     </dialog>
   `;
