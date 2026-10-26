@@ -3,136 +3,192 @@ import { createUI } from './ui';
 import { ClimbSimulation, LIMB_IDS, type LimbId, type Vec2 } from './simulation';
 import { ClimbRenderer } from './renderer';
 import { BIOMES, biomeIndex, formatHeight } from './biomes';
-import { drawResultCard, resultBlob, saveCard, shareText, pageUrl } from './share';
+import { MoonRace, MOON_HEIGHT, CHECKPOINTS, formatTime } from './race';
+import { drawResultCard, resultBlob, saveCard, shareText, pageUrl, type RaceResult } from './share';
 
 createUI();
-const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-const sim = new ClimbSimulation();
-let view: ClimbRenderer | undefined;
-const dialogs = ['help-dialog', 'pause-dialog', 'result-dialog'].map(id => el<HTMLDialogElement>(id));
-const paused = () => document.hidden || dialogs.some(dialog => dialog.open);
-let best = 0;
-let lastBiome = -1;
-let resultHeight = 0;
-let showingResult = false;
-let soundEnabled = false;
-let audio: AudioContext | undefined;
-const pointers = new Map<number, { id: LimbId; offset: Vec2 }>();
-const keyboardTargets = new Map<LimbId, Vec2>();
-try { const saved = Number(localStorage.getItem('gunyamast-best-v1')); if (Number.isFinite(saved) && saved > 0) best = saved; } catch { /* Private mode can disable storage. */ }
-el('best-value').textContent = formatHeight(best);
-
-function message(text: string) { el('status-message').textContent = text; }
-function tone(success: boolean) {
-  if (!soundEnabled) return;
-  try {
-    audio ??= new AudioContext(); void audio.resume();
-    const oscillator = audio.createOscillator(); const gain = audio.createGain();
-    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(success ? 680 : 210, audio.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(success ? 980 : 110, audio.currentTime + .12);
-    gain.gain.setValueAtTime(.045, audio.currentTime); gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .17);
-    oscillator.connect(gain).connect(audio.destination); oscillator.start(); oscillator.stop(audio.currentTime + .18);
-  } catch { /* Audio is optional. */ }
-}
-function releasePointers() {
-  sim.cancelDrags(); pointers.clear(); keyboardTargets.clear();
-}
-function updateUI() {
-  el('height-value').textContent = formatHeight(sim.height);
-  const index = biomeIndex(sim.height);
-  if (index !== lastBiome) {
-    view?.setBiome(index); lastBiome = index;
-    el('biome-label').textContent = BIOMES[index].name;
-    document.querySelector('.world-label-en')!.textContent = BIOMES[index].en;
-    el('biome-next').textContent = index < 4 ? `${BIOMES[index+1].from}m で、次の景色へ` : 'この先も、どこまでも。';
-    el('game-viewport').dataset.biome = String(index);
-    document.querySelectorAll<HTMLElement>('.route-list li').forEach(item => item.classList.toggle('is-active', Number(item.dataset.biome) === index));
-    if (index > 0) message(`${BIOMES[index].name}に到着。もう少し、上へ。`);
+const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
+const sim=new ClimbSimulation();
+const race=new MoonRace(sim);
+let view:ClimbRenderer|undefined;
+const dialogs=['help-dialog','pause-dialog','result-dialog'].map(id=>el<HTMLDialogElement>(id));
+const paused=()=>document.hidden||dialogs.some(dialog=>dialog.open);
+const BEST_KEY='gunyamast-moon-best-v1';
+type BestRecord={time:number;splits:number[]};
+let best:BestRecord|null=null;
+let resultData:RaceResult|null=null;
+let showingResult=false;
+let lastBiome=-1;
+let lastEvent=0;
+let lastBoosts=0;
+let toastUntil=0;
+let boostUntil=0;
+let finishAt=0;
+let soundEnabled=false;
+let audio:AudioContext|undefined;
+let previous=performance.now();
+let accumulator=0;
+let lastUI=0;
+const pointers=new Map<number,{id:LimbId;offset:Vec2;previousY:number}>();
+const keyboardTargets=new Map<LimbId,{point:Vec2;previousY:number}>();
+try{
+  const saved:unknown=JSON.parse(localStorage.getItem(BEST_KEY)||'null');
+  if(saved&&typeof saved==='object'&&'time' in saved&&'splits' in saved){
+    const candidate=saved as BestRecord;
+    if(Number.isFinite(candidate.time)&&candidate.time>0&&Array.isArray(candidate.splits)&&candidate.splits.length===5&&candidate.splits.every(n=>Number.isFinite(n)&&n>=0))best=candidate;
   }
-  for (const id of LIMB_IDS) {
-    const grip = el(`grip-${id}`); const limb = sim.limbs[id];
-    grip.classList.toggle('gripped', limb.gripped);
-    grip.setAttribute('aria-label', `${id.startsWith('left') ? '左' : '右'}${id.endsWith('Hand') ? '手' : '足'}：${limb.gripped ? 'つかまり中' : '離している'}`);
+}catch{/* Storage is optional in private mode. */}
+el('best-value').textContent=best?formatTime(best.time):'—';
+const resetClock=()=>{previous=performance.now();accumulator=0;};
+function flushActiveClock(){
+  const now=performance.now(),delta=Math.max(0,(now-previous)/1000);
+  if(!dialogs.some(dialog=>dialog.open)){race.tick(delta);accumulator+=Math.min(delta,.05);}
+  previous=now;
+}
+const message=(text:string)=>{el('status-message').textContent=text;};
+function tone(success:boolean,magic=false){
+  if(!soundEnabled)return;
+  try{
+    audio??=new AudioContext();void audio.resume();
+    const oscillator=audio.createOscillator(),gain=audio.createGain();
+    oscillator.type='sine';oscillator.frequency.setValueAtTime(magic?880:success?680:210,audio.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(magic?1760:success?980:110,audio.currentTime+.14);
+    gain.gain.setValueAtTime(.045,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.2);
+    oscillator.connect(gain).connect(audio.destination);oscillator.start();oscillator.stop(audio.currentTime+.21);
+  }catch{/* Audio is optional. */}
+}
+function releasePointers(){sim.cancelDrags();pointers.clear();keyboardTargets.clear();}
+function showStory(title:string,text:string,now=performance.now()){
+  el('story-title').textContent=title;el('story-text').textContent=text;toastUntil=now+4500;
+  el('story-toast').classList.add('is-visible');
+}
+function consumeEvent(now:number){
+  if(race.boosts>lastBoosts){lastBoosts=race.boosts;boostUntil=now+1100;tone(true,true);}
+  const event=race.event;if(!event||event.id===lastEvent)return;
+  lastEvent=event.id;
+  let text=event.text;
+  if(event.kind==='story'&&best&&race.stage>0){
+    const split=race.splits[race.stage-1],old=best.splits[race.stage-1];
+    if(Number.isFinite(split)&&Number.isFinite(old))text+=` 自己ベストより${formatTime(Math.abs(split-old))}${split<=old?'速い！':'、ここから挽回。'}`;
   }
+  if(event.kind==='rescue'){releasePointers();view?.resetCamera();message('中継地点から再出発。手と足を交互に、羽衣の追い風を。');tone(false);}
+  showStory(event.title,text,now);
 }
-function start() {
-  if (!view) return;
-  dialogs.forEach(dialog => dialog.close()); releasePointers(); sim.reset(); sim.start();
-  showingResult = false; lastBiome = -1; document.body.classList.add('is-playing');
-  message('まず左手を、少し上の竹へ。ゆっくり運んで離そう。'); updateUI();
-  requestAnimationFrame(() => view?.resize());
+function updateUI(now=performance.now()){
+  el('height-value').textContent=formatHeight(Math.min(MOON_HEIGHT,sim.height));
+  el('time-value').textContent=formatTime(race.time);
+  el('remaining-value').textContent=`${formatHeight(MOON_HEIGHT-sim.height)}m`;
+  el<HTMLProgressElement>('moon-progress').value=race.progress*MOON_HEIGHT;
+  el('penalty-value').textContent=`救出 +${race.penalties}秒`;
+  el('combo-value').textContent=`${race.combo} / 4`;
+  el('combo-meter').dataset.combo=String(race.combo);
+  const nextCheckpoint=CHECKPOINTS.find(height=>height>race.checkpoint);
+  el('checkpoint-value').textContent=race.completed?'おかえり、かぐや姫！':nextCheckpoint?`次の休み竹 ${nextCheckpoint}m`:'あとは、月へ。';
+  const index=biomeIndex(sim.height);
+  if(index!==lastBiome){
+    view?.setBiome(index);lastBiome=index;el('biome-label').textContent=BIOMES[index].name;
+    document.querySelector('.world-label-en')!.textContent=BIOMES[index].en;
+    el('biome-next').textContent=index<4?`${BIOMES[index+1].from}mで、${BIOMES[index+1].name}へ`:'24mで、月に到着。';
+    el('game-viewport').dataset.biome=String(index);
+    document.querySelectorAll<HTMLElement>('.route-list li').forEach(item=>item.classList.toggle('is-active',Number(item.dataset.biome)===index));
+  }
+  for(const id of LIMB_IDS){
+    const grip=el(`grip-${id}`),limb=sim.limbs[id];grip.classList.toggle('gripped',limb.gripped);
+    grip.setAttribute('aria-label',`${id.startsWith('left')?'左':'右'}${id.endsWith('Hand')?'手':'足'}：${limb.gripped?'つかまり中':'離している'}`);
+  }
+  if(now>toastUntil)el('story-toast').classList.remove('is-visible');
 }
-function result() {
-  if (showingResult) return;
-  releasePointers(); sim.finish(); showingResult = true; resultHeight = sim.maxHeight;
-  best = Math.max(best, resultHeight); el('best-value').textContent = formatHeight(best);
-  try { localStorage.setItem('gunyamast-best-v1', String(best)); } catch { /* Continue without persistent storage. */ }
-  drawResultCard(el<HTMLCanvasElement>('result-card'), resultHeight, best);
-  document.querySelector('.result-note')!.textContent='記録はこの端末に保存されます。';
-  el<HTMLDialogElement>('pause-dialog').close(); el<HTMLDialogElement>('result-dialog').showModal();
+function start(){
+  if(!view)return;
+  dialogs.forEach(dialog=>dialog.close());releasePointers();race.reset();race.start();
+  showingResult=false;resultData=null;finishAt=0;lastBiome=-1;lastBoosts=0;boostUntil=0;resetClock();
+  document.body.classList.add('is-playing');el('game-viewport').classList.remove('is-cleared');
+  view.resetCamera();
+  message('まず手、その次は足。少し上へ、交互につかもう。');
+  showStory('迎えが来ない。なら、登ろう。','かぐや姫の帰宅レース。手→足→手→足で、羽衣の追い風！');
+  updateUI();requestAnimationFrame(()=>view?.resize());
 }
-function pause() {
-  if (showingResult || sim.status === 'ready') return;
-  releasePointers(); if (!el<HTMLDialogElement>('pause-dialog').open) el<HTMLDialogElement>('pause-dialog').showModal();
+function showResult(){
+  if(showingResult)return;
+  flushActiveClock();
+  if(!race.completed)race.retire();
+  releasePointers();showingResult=true;
+  const improved=race.completed&&(!best||race.time<best.time);
+  if(improved){best={time:race.time,splits:[...race.splits]};try{localStorage.setItem(BEST_KEY,JSON.stringify(best));}catch{/* Play continues without storage. */}}
+  el('best-value').textContent=best?formatTime(best.time):'—';
+  resultData={cleared:race.completed,time:race.time,height:Math.min(MOON_HEIGHT,sim.maxHeight),falls:race.falls,boosts:race.boosts,best:best?.time??null};
+  drawResultCard(el<HTMLCanvasElement>('result-card'),resultData);
+  el('result-title').textContent=race.completed?'おかえり、かぐや姫。':'今日は、ここまで。';
+  el('result-label').textContent=race.completed?(improved?'NEW PERSONAL BEST / 自己ベスト！':'MOON RETURN / 月へ帰還'):'TO BE CONTINUED / また明日、月へ';
+  el('result-description').textContent=race.completed?`帰還タイム ${formatTime(race.time)}。月うさぎがおもちを用意して待っていました。`:`${formatHeight(resultData.height)}mまでの旅。次は手足のリズムで、もっと遠くへ。`;
+  document.querySelector('.result-note')!.textContent=race.completed?'帰還タイムはこの端末に保存されます。':'未帰還の記録は、最速タイムには入りません。';
+  el<HTMLDialogElement>('pause-dialog').close();el<HTMLDialogElement>('result-dialog').showModal();
+}
+function pause(){
+  if(showingResult||sim.status==='ready'||race.completed)return;
+  flushActiveClock();
+  releasePointers();resetClock();if(!el<HTMLDialogElement>('pause-dialog').open)el<HTMLDialogElement>('pause-dialog').showModal();
+}
+function finishGrip(id:LimbId,previousY:number){
+  flushActiveClock();
+  const success=sim.endDrag(id);race.recordGrip(id,previousY,success);tone(success);
+  message(!success?'届かなかった！ 竹の近く、無理のない位置へ。':race.combo>0?`いいリズム！ あと${4-race.combo}回、手と足を交互に。`:'つかめた！ 次は手と足を交互に運ぼう。');
+  consumeEvent(performance.now());
 }
 
-try {
-  view = new ClimbRenderer(el('game-viewport'), sim, () => {
-    pause(); const fallback=el('webgl-fallback');fallback.hidden=false;
-    fallback.innerHTML='<h2>3D画面が一時停止しました</h2><p>ページを再読み込みして、もう一度お試しください。端末の最高記録は保存されています。</p><button class="primary-button" onclick="location.reload()">再読み込み</button>';
+try{
+  view=new ClimbRenderer(el('game-viewport'),sim,()=>{
+    pause();const fallback=el('webgl-fallback');fallback.hidden=false;
+    fallback.innerHTML='<h2>3D画面が一時停止しました</h2><p>再読み込みして、もう一度お試しください。端末の最速記録は保存されています。</p><button class="primary-button" onclick="location.reload()">再読み込み</button>';
   });
-  const scenery = el('game-viewport').querySelector<HTMLElement>('.scenery-art');
-  if (scenery) scenery.style.backgroundImage = `url("${import.meta.env.BASE_URL}assets/forest-bg.png")`;
-  for (const id of LIMB_IDS) {
+  const scenery=el('game-viewport').querySelector<HTMLElement>('.scenery-art');
+  if(scenery)scenery.style.backgroundImage=`url("${import.meta.env.BASE_URL}assets/forest-bg.png")`;
+  for(const id of LIMB_IDS){
     const handle=view.handles[id];
-    handle.addEventListener('pointerdown', event => {
-      if (paused() || !view || !sim.beginDrag(id)) return;
-      event.preventDefault(); handle.setPointerCapture(event.pointerId);
+    handle.addEventListener('pointerdown',event=>{
+      if(paused()||!view||!sim.beginDrag(id))return;
+      event.preventDefault();handle.setPointerCapture(event.pointerId);
       const point=view.screenToWorld(event.clientX,event.clientY);
-      pointers.set(event.pointerId,{id,offset:{x:sim.limbs[id].pos.x-point.x,y:sim.limbs[id].pos.y-point.y}});
-      message('竹の近くへ、ゆっくり。丸が追いついたら指を離そう。');
+      pointers.set(event.pointerId,{id,previousY:sim.limbs[id].pos.y,offset:{x:sim.limbs[id].pos.x-point.x,y:sim.limbs[id].pos.y-point.y}});
+      message('少し上の竹へ。丸が追いついたら指を離そう。');
     });
-    handle.addEventListener('pointermove', event => {
+    handle.addEventListener('pointermove',event=>{
       const pointer=pointers.get(event.pointerId);if(!pointer||!view||paused())return;
       event.preventDefault();const point=view.screenToWorld(event.clientX,event.clientY);
       sim.moveDrag(id,{x:point.x+pointer.offset.x,y:point.y+pointer.offset.y});
     });
-    const release = (event: PointerEvent) => {
-      if(!pointers.has(event.pointerId))return;
-      pointers.delete(event.pointerId);const success=sim.endDrag(id);tone(success);
-      message(success?'つかめた！ 次の手足も、少しずつ。':'届かなかった！ 竹の近くの、無理のない位置へ。');
+    const release=(event:PointerEvent)=>{
+      const pointer=pointers.get(event.pointerId);if(!pointer)return;
+      pointers.delete(event.pointerId);finishGrip(id,pointer.previousY);
       if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
     };
-    handle.addEventListener('pointerup',release);handle.addEventListener('pointercancel',release);
-    handle.addEventListener('lostpointercapture',release);
+    handle.addEventListener('pointerup',release);handle.addEventListener('pointercancel',release);handle.addEventListener('lostpointercapture',release);
     handle.addEventListener('keydown',event=>{
-      if(paused()||sim.status!=='playing')return;
-      if(event.key===' '||event.key==='Enter') {
-        event.preventDefault();
-        if(keyboardTargets.has(id)){tone(sim.endDrag(id));keyboardTargets.delete(id);}
-        else if(sim.beginDrag(id)){keyboardTargets.set(id,{...sim.limbs[id].pos});message('矢印キーで動かし、Enterでつかまる。');}
-      } else if(event.key.startsWith('Arrow')) {
-        event.preventDefault();
-        if(!keyboardTargets.has(id)&&sim.beginDrag(id))keyboardTargets.set(id,{...sim.limbs[id].pos});
+      if(paused()||(sim.status!=='playing'&&sim.status!=='falling'))return;
+      if(event.key===' '||event.key==='Enter'){
+        event.preventDefault();const target=keyboardTargets.get(id);
+        if(target){finishGrip(id,target.previousY);keyboardTargets.delete(id);}
+        else if(sim.beginDrag(id)){keyboardTargets.set(id,{point:{...sim.limbs[id].pos},previousY:sim.limbs[id].pos.y});message('矢印で動かし、Enterでつかまる。');}
+      }else if(event.key.startsWith('Arrow')){
+        event.preventDefault();if(!keyboardTargets.has(id)&&sim.beginDrag(id))keyboardTargets.set(id,{point:{...sim.limbs[id].pos},previousY:sim.limbs[id].pos.y});
         const target=keyboardTargets.get(id);if(!target)return;
-        target.x+=event.key==='ArrowLeft'?-.08:event.key==='ArrowRight'?.08:0;
-        target.y+=event.key==='ArrowUp'?.08:event.key==='ArrowDown'?-.08:0;sim.moveDrag(id,target);
+        target.point.x+=event.key==='ArrowLeft'?-.08:event.key==='ArrowRight'?.08:0;
+        target.point.y+=event.key==='ArrowUp'?.08:event.key==='ArrowDown'?-.08:0;sim.moveDrag(id,target.point);
       }
     });
   }
-} catch (error) {
-  console.error('WebGL could not initialize', error);
-  const fallback=el('webgl-fallback');fallback.hidden=false;
-  fallback.innerHTML='<h2>3Dを表示できませんでした</h2><p>最新版のSafari・Chromeでお試しください。ブラウザのハードウェアアクセラレーションを有効にすると遊べる場合があります。</p>';
+}catch(error){
+  console.error('WebGL could not initialize',error);const fallback=el('webgl-fallback');fallback.hidden=false;
+  fallback.innerHTML='<h2>3Dを表示できませんでした</h2><p>最新版のSafari・Chromeでお試しください。ハードウェアアクセラレーションを有効にすると遊べる場合があります。</p>';
   el<HTMLButtonElement>('start-button').disabled=true;
 }
-el('start-button').addEventListener('click',start);
-el('retry-button').addEventListener('click',start);
+el('start-button').addEventListener('click',start);el('retry-button').addEventListener('click',start);
 el('pause-button').addEventListener('click',pause);
 el('resume-button').addEventListener('click',()=>el<HTMLDialogElement>('pause-dialog').close());
-el('finish-button').addEventListener('click',result);
-el('help-button').addEventListener('click',()=>{releasePointers();el<HTMLDialogElement>('help-dialog').showModal();});
+el('finish-button').addEventListener('click',showResult);
+el('help-button').addEventListener('click',()=>{flushActiveClock();releasePointers();resetClock();el<HTMLDialogElement>('help-dialog').showModal();});
 el('help-close').addEventListener('click',()=>el<HTMLDialogElement>('help-dialog').close());
+for(const dialog of dialogs)dialog.addEventListener('close',resetClock);
 el<HTMLDialogElement>('result-dialog').addEventListener('cancel',event=>event.preventDefault());
 el('sound-button').addEventListener('click',()=>{
   soundEnabled=!soundEnabled;el('sound-button').setAttribute('aria-pressed',String(soundEnabled));
@@ -140,46 +196,47 @@ el('sound-button').addEventListener('click',()=>{
   el('sound-button').querySelector('svg path:last-child')!.setAttribute('d',soundEnabled?'M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12':'m16 9 5 6m0-6-5 6');
 });
 el('save-button').addEventListener('click',async()=>{
-  try{await saveCard(el<HTMLCanvasElement>('result-card'),resultHeight);document.querySelector('.result-note')!.textContent='保存したカードを、好きなSNSに添付できます。';}
+  if(!resultData)return;
+  try{await saveCard(el<HTMLCanvasElement>('result-card'),resultData);document.querySelector('.result-note')!.textContent='保存したカードを、好きなSNSに添付できます。';}
   catch{document.querySelector('.result-note')!.textContent='カードを保存できませんでした。もう一度お試しください。';}
 });
 el('share-button').addEventListener('click',async()=>{
+  if(!resultData)return;
   const button=el<HTMLButtonElement>('share-button');button.disabled=true;
-  try {
-    const file=new File([await resultBlob(el<HTMLCanvasElement>('result-card'))],`gunyamast-${formatHeight(resultHeight)}m.png`,{type:'image/png'});
-    if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'グニャマスト',text:`${shareText(resultHeight)}\n${pageUrl()}`});
-    else if(navigator.share)await navigator.share({title:'グニャマスト',text:shareText(resultHeight),url:pageUrl()});
-    else {
-      await saveCard(el<HTMLCanvasElement>('result-card'),resultHeight);
-      try {await navigator.clipboard.writeText(`${shareText(resultHeight)}\n${pageUrl()}`);document.querySelector('.result-note')!.textContent='カードを保存し、投稿文をコピーしました。SNSに貼り付けてシェア！';}
+  try{
+    const file=new File([await resultBlob(el<HTMLCanvasElement>('result-card'))],'gunyamast-kaguya.png',{type:'image/png'});
+    if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'グニャマスト — かぐや、月へ帰る',text:`${shareText(resultData)}\n${pageUrl()}`});
+    else if(navigator.share)await navigator.share({title:'グニャマスト',text:shareText(resultData),url:pageUrl()});
+    else{
+      await saveCard(el<HTMLCanvasElement>('result-card'),resultData);
+      try{await navigator.clipboard.writeText(`${shareText(resultData)}\n${pageUrl()}`);document.querySelector('.result-note')!.textContent='カードを保存し、投稿文をコピーしました。SNSに貼り付けてシェア！';}
       catch{document.querySelector('.result-note')!.textContent='カードを保存しました。「Xに投稿する」から記録をシェアできます。';}
     }
-  } catch(error) {
-    if(!(error instanceof DOMException&&error.name==='AbortError'))document.querySelector('.result-note')!.textContent='共有できませんでした。「カードを保存」から画像を保存できます。';
-  } finally{button.disabled=false;}
+  }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))document.querySelector('.result-note')!.textContent='共有できませんでした。「カードを保存」から画像を保存できます。';}
+  finally{button.disabled=false;}
 });
 el('x-share-button').addEventListener('click',()=>{
-  const params=new URLSearchParams({text:shareText(resultHeight),url:pageUrl()});
-  window.open(`https://twitter.com/intent/tweet?${params}`,'_blank','noopener,noreferrer');
-  document.querySelector('.result-note')!.textContent='カードも載せるなら、保存した画像をXの投稿に添付してください。';
+  if(!resultData)return;const params=new URLSearchParams({text:shareText(resultData),url:pageUrl()});window.open(`https://twitter.com/intent/tweet?${params}`,'_blank','noopener,noreferrer');
+  document.querySelector('.result-note')!.textContent='画像も載せるなら、保存したカードを投稿に添付してください。';
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();resetClock();});
 window.addEventListener('blur',()=>{if(sim.status==='playing'||sim.status==='falling')pause();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!paused())pause();});
 
-let previous=performance.now();let accumulator=0;let lastUI=0;
 function frame(now:number){
-  const dt=Math.min((now-previous)/1000,.05);previous=now;
+  const wallDelta=Math.max(0,(now-previous)/1000);previous=now;const dt=Math.min(wallDelta,.05);
   if(!paused()){
-    accumulator+=dt;
-    while(accumulator>=1/120){sim.step(1/120);accumulator-=1/120;}
-    if(sim.status==='ended'&&!showingResult)result();
+    race.tick(wallDelta);accumulator+=dt;
+    while(accumulator>=1/120){sim.step(1/120);race.afterStep();accumulator-=1/120;}
+    consumeEvent(now);
+    if(race.completed&&!showingResult){
+      if(!finishAt){finishAt=now+1100;releasePointers();el('game-viewport').classList.add('is-cleared');tone(true,true);}
+      if(now>=finishAt)showResult();
+    }
   }else accumulator=0;
-  view?.update(dt);
-  if(now-lastUI>80){updateUI();lastUI=now;}
+  view?.setRaceFeedback(race.combo,now<boostUntil,race.completed);view?.update(dt);
+  if(now-lastUI>50){updateUI(now);lastUI=now;}
   requestAnimationFrame(frame);
 }
 updateUI();requestAnimationFrame(frame);
-
-// Development-only inspection; excluded from production by Vite.
-if(import.meta.env.DEV)Object.assign(window,{__GUNYAMAST__:{sim,get view(){return view;},biomeIndex}});
+if(import.meta.env.DEV)Object.assign(window,{__GUNYAMAST__:{sim,race,get view(){return view;},biomeIndex}});

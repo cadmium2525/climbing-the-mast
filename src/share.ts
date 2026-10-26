@@ -1,83 +1,70 @@
 import { BIOMES, biomeIndex, formatHeight } from './biomes';
+import { formatTime, MOON_HEIGHT } from './race';
 
+export type RaceResult = {
+  cleared: boolean; time: number; height: number; falls: number; boosts: number; best: number | null;
+};
+export function resultTitle(result: RaceResult) {
+  if (!result.cleared) return '里帰りは、つづく。';
+  return result.time < 90 ? '月の最速便' : result.time < 180 ? '羽衣の達人' : '自力帰還のかぐや姫';
+}
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
 }
 
-/** All pixels are drawn locally: no remote images or cross-origin canvas taint. */
-export function drawResultCard(canvas: HTMLCanvasElement, height: number, best: number) {
+/** Locally generated card. No cross-origin canvas dependencies. */
+export function drawResultCard(canvas: HTMLCanvasElement, result: RaceResult) {
   const ctx = canvas.getContext('2d')!;
   canvas.width = 900; canvas.height = 1200;
-  const biome = BIOMES[biomeIndex(height)];
-  const index = biomeIndex(height);
+  const biome = BIOMES[biomeIndex(result.height)];
   ctx.fillStyle = '#f5f3e9'; ctx.fillRect(0, 0, 900, 1200);
-  ctx.strokeStyle = '#d8ddcc'; ctx.lineWidth = 1;
-  for (let x = 0; x < 900; x += 45) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 1200); ctx.stroke(); }
-  for (let y = 0; y < 1200; y += 45) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(900, y); ctx.stroke(); }
-  ctx.fillStyle = '#244b38'; ctx.font = 'bold 32px sans-serif'; ctx.fillText('グニャマスト', 62, 88);
-  ctx.font = '15px monospace'; ctx.fillText('YOUR LITTLE EXPEDITION', 545, 83);
-  ctx.strokeStyle = '#244b38'; ctx.beginPath(); ctx.moveTo(62, 116); ctx.lineTo(838, 116); ctx.stroke();
-  const gradient = ctx.createLinearGradient(0, 150, 0, 700);
-  gradient.addColorStop(0, biome.sky); gradient.addColorStop(1, index===4 ? '#565480' : index===3 ? '#f7dda9' : '#e2e8d3');
-  ctx.fillStyle = gradient; roundRect(ctx, 62, 150, 776, 560, 6);
-  ctx.save(); ctx.beginPath(); ctx.rect(62, 150, 776, 560); ctx.clip();
-  if(index===4) {
-    ctx.fillStyle='#fff8dd';
-    for(let i=0;i<46;i++){ctx.beginPath();ctx.arc(80+((i*137)%740),170+((i*89)%480),i%3===0?2:1,0,Math.PI*2);ctx.fill();}
-  }
-  if(index===3){ctx.fillStyle='#fff0ba';ctx.beginPath();ctx.arc(704,310,48,0,Math.PI*2);ctx.fill();}
-  ctx.globalAlpha = .25;
-  for (let i = 0; i < 3; i++) {
-    ctx.fillStyle = biome.color; ctx.beginPath(); ctx.moveTo(62, 710);
-    for (let x = 62; x < 860; x += 20) ctx.lineTo(x, 520 + i * 60 + Math.sin(x * .006 + i * 2) * 70 + Math.cos(x * .012 + i) * 35);
-    ctx.lineTo(838, 710); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = '#617c35'; roundRect(ctx, 455, 150, 33, 560, 8);
-  ctx.fillStyle = '#91a64b'; ctx.fillRect(460, 150, 8, 560);
-  for (let y = 200; y < 710; y += 110) { ctx.fillStyle = '#aabb67'; roundRect(ctx, 451, y, 42, 8, 3); }
-  // The same little climber, translated into a shareable graphic.
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const line = (points: number[][], color: string, width: number) => {
-    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
-    points.forEach(([x,y], i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y)); ctx.stroke();
-  };
-  line([[427,465],[385,507],[458,555]], '#364f57', 25);
-  line([[448,465],[504,514],[482,555]], '#476772', 25);
-  line([[421,387],[378,351],[462,310]], '#e9b68b', 19);
-  line([[449,386],[510,363],[482,338]], '#e9b68b', 19);
-  ctx.fillStyle = '#e7bd4e'; roundRect(ctx, 410, 371, 50, 101, 22);
-  ctx.fillStyle = '#f2c5a1'; ctx.beginPath(); ctx.arc(435, 346, 28, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#c76740'; ctx.beginPath(); ctx.arc(434, 337, 29, Math.PI, 0); ctx.fill(); roundRect(ctx, 403, 329, 64, 11, 5);
-  ctx.fillStyle='#36483b';for(const x of [426,445]){ctx.beginPath();ctx.arc(x,350,2.3,0,Math.PI*2);ctx.fill();}
-  ctx.strokeStyle='#ad795a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(435,354,8,.2,Math.PI-.2);ctx.stroke();
-  line([[449,554],[468,554]], '#c36743', 20); line([[479,553],[498,553]], '#c36743', 20);
+  ctx.strokeStyle = '#dedbcb'; ctx.lineWidth = 1;
+  for(let x=0;x<900;x+=45){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,1200);ctx.stroke();}
+  for(let y=0;y<1200;y+=45){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(900,y);ctx.stroke();}
+  ctx.fillStyle = '#333c43'; ctx.font = 'bold 31px sans-serif'; ctx.fillText('グニャマスト', 62, 83);
+  ctx.font = '19px sans-serif'; ctx.fillText('かぐや、月へ帰る。', 581, 81);
+  ctx.strokeStyle='#ada987';ctx.beginPath();ctx.moveTo(62,113);ctx.lineTo(838,113);ctx.stroke();
+  const sky=ctx.createLinearGradient(0,145,0,670);sky.addColorStop(0,'#191f3e');sky.addColorStop(1,result.cleared?'#655c80':biome.color);
+  ctx.fillStyle=sky;roundRect(ctx,62,145,776,510,7);
+  ctx.save();ctx.beginPath();ctx.rect(62,145,776,510);ctx.clip();
+  ctx.fillStyle='#f9ebc8';
+  for(let i=0;i<58;i++){ctx.beginPath();ctx.arc(75+((i*137)%750),158+((i*89)%470),i%4===0?2:1,0,Math.PI*2);ctx.fill();}
+  ctx.shadowColor='#fce8b3';ctx.shadowBlur=40;ctx.beginPath();ctx.arc(676,283,91,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.fillStyle='#dccda1';for(const [x,y,r] of [[650,260,14],[700,301,20],[640,307,9],[695,240,8]]){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle='#7b8b4b';roundRect(ctx,442,145,29,510,6);ctx.fillStyle='#b2bd72';ctx.fillRect(447,145,6,510);
+  for(let y=190;y<655;y+=96){ctx.fillStyle='#bfcb86';roundRect(ctx,438,y,37,7,3);}
+  const line=(points:number[][],color:string,width:number)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();};
+  // Her back faces the viewer: long black hair and the red obi bow.
+  line([[419,473],[381,514],[443,559]],'#be8190',27);
+  line([[450,473],[497,520],[469,559]],'#d5a0ad',27);
+  line([[419,400],[368,374],[443,332]],'#ede3d1',31);
+  line([[452,400],[508,376],[467,350]],'#f2e9dd',31);
+  line([[430,341],[444,331]],'#edc4a3',15);line([[473,351],[465,349]],'#edc4a3',15);
+  ctx.fillStyle='#e9c5c5';roundRect(ctx,407,388,56,96,22);
+  ctx.fillStyle='#ce6474';roundRect(ctx,404,449,62,20,4);
+  ctx.fillStyle='#1e2430';roundRect(ctx,411,336,48,105,22);
+  ctx.strokeStyle='#e5c26d';ctx.lineWidth=5;ctx.beginPath();ctx.arc(436,349,17,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#a94c64';ctx.beginPath();ctx.moveTo(437,460);ctx.lineTo(403,444);ctx.lineTo(403,480);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(435,460);ctx.lineTo(470,444);ctx.lineTo(470,480);ctx.closePath();ctx.fill();
+  line([[435,559],[451,559]],'#ecdcc0',15);line([[465,559],[482,559]],'#ecdcc0',15);
+  if(result.cleared){ctx.fillStyle='#efe6cf';ctx.beginPath();ctx.ellipse(660,650,180,42,0,0,Math.PI*2);ctx.fill();}
   ctx.restore();
-  ctx.fillStyle = '#244b38'; ctx.font = '18px monospace'; ctx.fillText('HIGHEST POINT / 最高到達点', 64, 765);
-  ctx.font = 'bold 136px sans-serif';
-  const numeralWidth=ctx.measureText(formatHeight(height)).width;
-  if(numeralWidth>690)ctx.font=`bold ${136*690/numeralWidth}px sans-serif`;
-  ctx.fillText(formatHeight(height), 56, 906);
-  const width = ctx.measureText(formatHeight(height)).width;
-  ctx.font = '36px monospace'; ctx.fillText('m', Math.min(790, 72 + width), 900);
-  ctx.font = 'bold 32px sans-serif'; ctx.fillText(biome.title, 64, 981);
-  ctx.font = '22px sans-serif'; ctx.fillStyle = '#697665'; ctx.fillText(biome.message, 64, 1029);
-  ctx.strokeStyle = '#b9c4af'; ctx.beginPath(); ctx.moveTo(62, 1075); ctx.lineTo(838, 1075); ctx.stroke();
-  ctx.font = '18px monospace'; ctx.fillStyle = '#244b38'; ctx.fillText(`#グニャマスト  BEST ${formatHeight(best)}m`, 64, 1120);
-  ctx.font = '17px sans-serif'; ctx.fillText('手足はぐにゃぐにゃ。竹はどこまでも。', 64, 1161);
+  ctx.fillStyle='#333c43';ctx.font='17px monospace';ctx.fillText(result.cleared?'MOON RETURN / 月まで帰還':'TO BE CONTINUED / 今回の旅',64,709);
+  const numeral=result.cleared?formatTime(result.time):`${formatHeight(result.height)} / ${MOON_HEIGHT}m`;
+  ctx.font='bold 113px sans-serif';const width=ctx.measureText(numeral).width;if(width>780)ctx.font=`bold ${113*780/width}px sans-serif`;ctx.fillText(numeral,56,842);
+  ctx.font='bold 32px sans-serif';ctx.fillText(resultTitle(result),64,914);
+  ctx.font='22px sans-serif';ctx.fillStyle='#717264';ctx.fillText(result.cleared?'ただいま、月。……明日は筋肉痛ですね。':'迎えを待つより、もうひと登り。',64,960);
+  ctx.font='19px monospace';ctx.fillStyle='#565b58';ctx.fillText(`追い風 ${result.boosts}回   救出 ${result.falls}回（+${result.falls*5}秒）`,64,1012);
+  ctx.strokeStyle='#bdbca8';ctx.beginPath();ctx.moveTo(62,1050);ctx.lineTo(838,1050);ctx.stroke();
+  ctx.font='19px monospace';ctx.fillText(result.best!==null?`PERSONAL BEST  ${formatTime(result.best)}`:'月への旅は、まだこれから。',64,1097);
+  ctx.font='20px sans-serif';ctx.fillText('#グニャマスト #かぐや月へ帰る',64,1141);
 }
 
-export const resultBlob = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolve, reject) => {
-  canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('カードを作れませんでした')), 'image/png');
-});
-export function shareText(height: number) {
-  return `ぐにゃぐにゃの手足で ${formatHeight(height)}m 登った！\n称号「${BIOMES[biomeIndex(height)].title}」\nあなたはどこまで登れる？ #グニャマスト`;
+export const resultBlob=(canvas:HTMLCanvasElement)=>new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('カードを作れませんでした')),'image/png'));
+export function shareText(result:RaceResult){
+  return result.cleared?`迎えが来ないので、自力で月へ帰りました。\n帰還タイム ${formatTime(result.time)} / 追い風${result.boosts}回・救出${result.falls}回\n「${resultTitle(result)}」 #グニャマスト #かぐや月へ帰る`:`月まであと${formatHeight(MOON_HEIGHT-result.height)}m！\nぐにゃぐにゃのかぐや姫、里帰りはつづく。 #グニャマスト #かぐや月へ帰る`;
 }
-export function pageUrl() { return new URL('./', location.href).href; }
-export async function saveCard(canvas: HTMLCanvasElement, height: number) {
-  const blob = await resultBlob(canvas);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a'); link.href = url; link.download = `gunyamast-${formatHeight(height)}m.png`;
-  document.body.append(link); link.click(); link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+export function pageUrl(){return new URL('./',location.href).href;}
+export async function saveCard(canvas:HTMLCanvasElement,result:RaceResult){
+  const url=URL.createObjectURL(await resultBlob(canvas));const link=document.createElement('a');
+  link.href=url;link.download=`gunyamast-kaguya-${result.cleared?result.time.toFixed(2)+'s':'journey'}.png`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }

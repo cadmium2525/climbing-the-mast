@@ -9,7 +9,7 @@
   --ink: #16392c;
   --ink-soft: #64786a;
   --line: #d5dbce;
-  --citrus: #dfef64;
+  --citrus: #e6df9b;
   --forest: #244a38;
 }
 
@@ -30,7 +30,7 @@ a { color: inherit; }
 .brand-mark { width: 37px; height: 44px; }
 .brand-mark svg { width: 100%; height: 100%; }
 .brand-name { font-size: 21px; font-weight: 850; letter-spacing: -.07em; line-height: 1.1; }
-.brand-name > span { display: block; margin-top: 6px; font-size: 9px; font-weight: 600; letter-spacing: .34em; }
+.brand-name > span { display: block; margin-top: 6px; font-size: 9px; font-weight: 600; letter-spacing: .12em; }
 .header-edition { margin-left: 36px; color: var(--ink-soft); font-size: 9px; font-weight: 650; letter-spacing: .15em; }
 .header-edition span { margin-left: 25px; font-size: 9px; letter-spacing: .08em; }
 .header-actions { display: flex; align-items: center; gap: 24px; }
@@ -47,11 +47,12 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
 .intro-meta { width: 190px; margin-top: 37px; padding-top: 18px; border-top: 1px solid var(--line); }
 .intro-meta .mini-label { font-size: 8px; letter-spacing: .15em; }
 .best-record { display: flex; align-items: baseline; gap: 7px; margin-top: 7px; line-height: 1; }
-.best-record #best-value { font-family: "Arial", "Helvetica Neue", sans-serif; font-size: 49px; letter-spacing: -.055em; font-weight: 400; font-variant-numeric: tabular-nums; }
+.best-record #best-value { font-family: "Arial", "Helvetica Neue", sans-serif; font-size: 43px; letter-spacing: -.055em; font-weight: 400; font-variant-numeric: tabular-nums; }
 .record-unit { font-size: 16px; }
 .record-note { display: flex; justify-content: space-between; margin-top: 12px; font-size: 9px; color: var(--ink-soft); }
 .record-note > span { color: var(--ink); font-size: 13px; }
 .field-note { display: flex; gap: 10px; align-items: flex-start; max-width: 255px; margin-top: 40px; }
+.field-note-number { white-space: nowrap; }
 .field-note-number { margin-top: 2px; font-size: 9px; letter-spacing: .03em; }
 .field-note p { font-size: 10px; line-height: 1.95; color: #7b8877; }
 .note-arrow { display: inline-flex; align-items: center; justify-content: center; width: 33px; height: 33px; margin-left: auto; border: 1px solid var(--line); border-radius: 50%; transform: rotate(25deg); }
@@ -98,7 +99,7 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
 .grip-indicator.foot.gripped, .grip-indicator.foot.active { background: #b89944; border-color: #9b7b29; }
 .grip-indicator > span { display: none; }
 .scene-side-note { position: absolute; right: 11px; top: 47%; z-index: 2; font-size: 6px; letter-spacing: .14em; writing-mode: vertical-rl; opacity: .47; pointer-events: none; }
-.status-message { display: none; position: absolute; z-index: 4; bottom: 24px; right: 20px; max-width: 65%; font-size: 9px; line-height: 1.6; text-align: right; color: #244a38; pointer-events: none; }
+.status-message { display: none; position: absolute; z-index: 4; bottom: 24px; right: 20px; max-width: calc(100% - 155px); font-size: 9px; line-height: 1.6; text-align: right; color: #244a38; pointer-events: none; }
 .start-overlay { position: absolute; z-index: 7; left: 25px; right: 25px; bottom: 27px; text-align: center; }
 .start-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; font-size: 9px; letter-spacing: .02em; }
 .start-note > span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
@@ -126,7 +127,8 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
 .route-list li.is-active .route-node, .route-list li.active .route-node { background: var(--ink); border-color: var(--ink); box-shadow: 0 0 0 3px #dfef64; }
 .route-current { display: inline-block; margin-top: 8px; font-size: 5px; letter-spacing: .07em; padding: 3px 4px; background: var(--citrus); color: var(--ink); }
 .route-note { display: flex; align-items: center; gap: 9px; margin-top: 29px; color: #7d8a75; font-size: 8px; }
-.route-note > span { font-family: Georgia, serif; font-size: 22px; }
+.route-note > span { width: 21px; height: 24px; color: #b29a4f; }
+.route-note svg { width: 100%; height: 100%; }
 .control-bar { display: flex; align-items: center; gap: 17px; min-height: 68px; margin-top: 23px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .control-caption { font-size: 8px; letter-spacing: .12em; margin-right: auto; }
 .control-step { display: flex; align-items: center; gap: 8px; }
@@ -175,7 +177,8 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
 .help-steps h3 { font-size: 13px; font-weight: 750; }
 .help-steps p { margin-top: 7px; font-size: 11px; line-height: 1.9; color: #75816e; }
 .help-bottom { display: flex; align-items: center; gap: 11px; margin-top: 24px; font-size: 9px; line-height: 1.8; color: #748468; }
-.help-bottom > span { font-family: Georgia, serif; font-size: 25px; }
+.help-bottom > span { width: 25px; height: 25px; flex: 0 0 auto; color: #b29a4f; }
+.help-bottom svg { width: 100%; height: 100%; }
 .pause-dialog { width: 382px; text-align: center; }
 .pause-dialog .eyebrow { justify-content: center; }
 .pause-dialog h2 { margin-top: 24px; }
@@ -211,6 +214,54 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
 .retry-button:hover { color: #7b943e; }
 .result-note { font-size: 8px; color: #8c977f; margin-top: 15px; }
 
+/* A little lunar travel guide: keep the playfield clear of the race information. */
+.race-hud { position: absolute; z-index: 3; top: 124px; left: 25px; right: 25px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 11px 15px; color: #244a38; pointer-events: none; }
+.race-hud .mini-label { font-size: 6px; letter-spacing: .16em; }
+.race-timer { position: relative; padding: 10px 12px 9px; border: 1px solid #f8f6e97d; border-radius: 8px; background: #f6f5ede8; box-shadow: 0 3px 15px #28433505; }
+.race-timer #time-value { font-family: Arial, "Helvetica Neue", sans-serif; font-size: 30px; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -.04em; margin-top: 4px; }
+.penalty-value { display: block; margin-top: 4px; font-size: 7px; opacity: .68; }
+.race-hud .altitude-hud { position: static; color: inherit; text-align: right; padding: 10px 11px 9px; border: 1px solid #f8f6e97d; border-radius: 8px; background: #f6f5ede8; }
+.race-hud .altitude-hud p { justify-content: flex-end; margin-top: 6px; gap: 3px; }
+.race-hud #height-value { font-size: 24px; }
+.race-hud .height-unit { font-size: 9px; }
+.race-hud #biome-next { font-size: 7px; margin-top: 7px; }
+.moon-distance { flex: 0 0 100%; padding: 8px 10px; border-radius: 6px; background: #f6f5edd9; }
+.progress-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 8px; }
+.progress-label > span:first-child { display: inline-flex; align-items: center; gap: 3px; }
+.progress-label svg { width: 13px; height: 13px; color: #b49b45; }
+.progress-label strong { font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#checkpoint-value { font-size: 7px; opacity: .65; }
+#moon-progress { display: block; appearance: none; width: 100%; height: 4px; margin-top: 7px; border: 0; border-radius: 8px; overflow: hidden; color: #a69a4b; background: #244a3815; }
+#moon-progress::-webkit-progress-bar { background: #244a3815; border-radius: 8px; }
+#moon-progress::-webkit-progress-value { background: linear-gradient(90deg, #597b52, #c5af60); border-radius: 8px; transition: width .3s ease; }
+#moon-progress::-moz-progress-bar { background: linear-gradient(90deg, #597b52, #c5af60); border-radius: 8px; }
+.stage-actions { top: 76px; right: 25px; }
+.rhythm-hud { display: none; position: absolute; z-index: 4; bottom: 68px; left: 24px; padding: 9px 11px; border: 1px solid #fff8; border-radius: 8px; background: #f6f5ede8; color: #244a38; pointer-events: none; }
+.combo-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.combo-heading .mini-label { font-size: 6px; letter-spacing: .12em; opacity: .6; }
+#combo-value { font-size: 8px; font-weight: 700; }
+.combo-meter { display: flex; gap: 4px; margin-top: 7px; }
+.combo-meter i { display: block; flex: 1; height: 4px; min-width: 25px; border-radius: 4px; background: #244a381a; transition: background .18s, box-shadow .18s; }
+.combo-meter[data-combo="1"] i:nth-child(-n+1), .combo-meter[data-combo="2"] i:nth-child(-n+2), .combo-meter[data-combo="3"] i:nth-child(-n+3), .combo-meter[data-combo="4"] i { background: #aa984e; box-shadow: 0 0 7px #d1b85842; }
+.combo-hint { display: block; margin-top: 6px; font-size: 7px; opacity: .65; }
+.is-playing .rhythm-hud { display: block; }
+.story-toast { position: absolute; z-index: 5; top: 275px; left: 50%; display: flex; gap: 9px; align-items: flex-start; width: min(82%, 300px); padding: 10px 12px; border: 1px solid #e3d29b99; border-radius: 8px; background: #fcf9eefa; box-shadow: 0 5px 20px #172e1e0a; color: #284335; opacity: 0; transform: translate(-50%, -7px); transition: opacity .25s, transform .25s; pointer-events: none; }
+.story-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.story-moon { flex: 0 0 19px; color: #b59e54; }
+.story-moon svg { width: 19px; height: 22px; }
+.story-toast strong { display: block; font-size: 10px; line-height: 1.5; }
+.story-toast p { font-size: 9px; line-height: 1.7; margin-top: 3px; opacity: .75; }
+.game-viewport[data-biome="3"] .race-hud, .game-viewport[data-biome="4"] .race-hud { color: #f7f0dc; }
+.game-viewport[data-biome="3"] .race-timer, .game-viewport[data-biome="4"] .race-timer, .game-viewport[data-biome="3"] .moon-distance, .game-viewport[data-biome="4"] .moon-distance, .game-viewport[data-biome="3"] .altitude-hud, .game-viewport[data-biome="4"] .altitude-hud, .game-viewport[data-biome="3"] .rhythm-hud, .game-viewport[data-biome="4"] .rhythm-hud { color: #f7f0dc; background: #24243de6; border-color: #eee9da22; }
+.game-viewport[data-biome="3"] .altitude-hud, .game-viewport[data-biome="4"] .altitude-hud { color: #f7f0dc; }
+.game-viewport[data-biome="3"] .round-button { color: #eee9da; background: #24243dba; border-color: #eee9da66; }
+.game-viewport[data-biome="3"] .world-label, .game-viewport[data-biome="3"] .grip-hud, .game-viewport[data-biome="3"] .status-message { color: #f7f0dc; background: #24243de6; }
+.game-viewport[data-biome="3"] .scene-side-note { color: #f7f0dc; }
+.game-viewport[data-biome="3"] .grip-indicator { border-color: #eee9da99; }
+.game-viewport[data-biome="3"] .grip-indicator.gripped { background: #dfcb7e; border-color: #dfcb7e; }
+.game-viewport[data-biome="3"] .combo-meter i, .game-viewport[data-biome="4"] .combo-meter i { background: #eee9da25; }
+.game-viewport[data-biome="3"] .combo-meter[data-combo="1"] i:nth-child(-n+1), .game-viewport[data-biome="4"] .combo-meter[data-combo="1"] i:nth-child(-n+1), .game-viewport[data-biome="3"] .combo-meter[data-combo="2"] i:nth-child(-n+2), .game-viewport[data-biome="4"] .combo-meter[data-combo="2"] i:nth-child(-n+2), .game-viewport[data-biome="3"] .combo-meter[data-combo="3"] i:nth-child(-n+3), .game-viewport[data-biome="4"] .combo-meter[data-combo="3"] i:nth-child(-n+3), .game-viewport[data-biome="3"] .combo-meter[data-combo="4"] i, .game-viewport[data-biome="4"] .combo-meter[data-combo="4"] i { background: #dfcb7e; }
+
 @media (min-width: 1600px) { .climb-layout { gap: 56px; } .introduction { padding-top: 100px; } .route { padding-top: 100px; } }
 @media (max-width: 1210px) {
   .site-shell { padding: 0 32px; }
@@ -241,7 +292,7 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
   .brand { gap: 7px; }
   .brand-mark { width: 27px; height: 34px; }
   .brand-name { font-size: 18px; }
-  .brand-name > span { font-size: 7px; margin-top: 5px; letter-spacing: .32em; }
+  .brand-name > span { font-size: 8px; margin-top: 5px; letter-spacing: .1em; }
   .header-actions { gap: 18px; }
   .header-action { padding: 10px 0 10px 3px; }
   .header-action svg { width: 21px; height: 21px; }
@@ -250,12 +301,12 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
   .introduction { position: relative; padding: 24px 0 21px; }
   .introduction .eyebrow { font-size: 7px; letter-spacing: .07em; gap: 5px; }
   .small-square { height: 5px; width: 5px; }
-  h1 { margin-top: 10px; font-size: clamp(27px, 7.6vw, 41px); line-height: 1.38; letter-spacing: -.06em; }
+  h1 { margin-top: 10px; font-size: clamp(25px, 7vw, 38px); line-height: 1.45; letter-spacing: -.06em; }
   .intro-description, .field-note { display: none; }
-  .intro-meta { position: absolute; top: 28px; right: 0; width: auto; margin: 0; padding: 0; border: none; text-align: right; }
+  .intro-meta { position: absolute; top: 45px; right: 0; width: auto; margin: 0; padding: 0; border: none; text-align: right; }
   .intro-meta .mini-label { max-width: 78px; margin-left: auto; font-size: 6px; line-height: 1.7; letter-spacing: .1em; }
   .best-record { justify-content: flex-end; margin-top: 7px; gap: 4px; }
-  .best-record #best-value { font-size: 29px; }
+  .best-record #best-value { font-size: 25px; }
   .record-unit { font-size: 11px; }
   .record-note { font-size: 6px; margin-top: 7px; }
   .record-note > span { display: none; }
@@ -270,6 +321,17 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
   .height-unit { font-size: 13px; }
   #biome-next { font-size: 6px; margin-top: 7px; }
   .stage-actions { top: 110px; right: 17px; }
+  .race-hud { top: 101px; left: 18px; right: 18px; gap: 8px 10px; }
+  .race-timer { padding: 8px 10px; }
+  .race-timer #time-value { font-size: 27px; }
+  .race-hud .altitude-hud { top: auto; left: auto; padding-bottom: 8px; }
+  .race-hud #height-value { font-size: 23px; }
+  .race-hud #biome-next { font-size: 6px; max-width: 155px; }
+  .moon-distance { padding: 7px 9px; }
+  .progress-label { font-size: 7px; }
+  .progress-label strong { font-size: 8px; }
+  #checkpoint-value { font-size: 6px; }
+  .story-toast { top: 244px; }
   .round-button { width: 38px; height: 38px; }
   .scene-side-note { right: 8px; font-size: 5px; }
   .start-overlay { bottom: 18px; left: 18px; right: 18px; }
@@ -297,11 +359,16 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
   .is-playing .game-viewport { height: calc(100svh - 116px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height: none; min-height: 380px; border-radius: 20px 20px 0 0; }
   .is-playing .world-label { top: 21px; }
   .is-playing .altitude-hud { top: 61px; left: 23px; }
+  .is-playing .race-hud { top: 62px; left: 20px; right: 20px; }
+  .is-playing .race-hud .altitude-hud { top: auto; left: auto; }
   .is-playing .stage-actions { top: 61px; right: 20px; }
+  .is-playing .stage-actions { top: 14px; right: 16px; }
   .is-playing .control-bar { height: calc(54px + env(safe-area-inset-bottom)); padding: 0 20px env(safe-area-inset-bottom); min-height: 54px; border: 0; }
   .is-playing .control-step p { font-size: 8px; }
   .is-playing .grip-hud { bottom: 22px; left: 20px; gap: 9px; }
-  .is-playing .status-message { bottom: 20px; right: 18px; font-size: 8px; max-width: 59%; }
+  .is-playing .status-message { bottom: 20px; right: 18px; font-size: 8px; max-width: calc(100% - 155px); }
+  .is-playing .rhythm-hud { bottom: 64px; left: 20px; padding: 8px 10px; }
+  .is-playing .story-toast { top: 202px; }
   .game-dialog { max-height: calc(100svh - 30px); width: calc(100% - 30px); padding: 30px 26px; border-radius: 10px; }
   .game-dialog h2 { font-size: 31px; margin-top: 19px; }
   .game-dialog .eyebrow { font-size: 7px; }
@@ -332,7 +399,7 @@ h1 { margin-top: 25px; font-size: clamp(37px, 3.3vw, 52px); line-height: 1.52; l
   .header-actions { gap: 14px; }
   .introduction { padding-top: 21px; }
   h1 { font-size: 27px; }
-  .intro-meta { top: 24px; }
+  .intro-meta { top: 42px; }
   .control-step p { font-size: 7px; }
   .control-step { gap: 3px; }
   .game-viewport { min-height: 450px; }
