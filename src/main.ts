@@ -120,7 +120,7 @@ function showResult(){
   drawResultCard(el<HTMLCanvasElement>('result-card'),resultData);
   el('result-title').textContent=race.completed?'おかえり、かぐや姫。':'今日は、ここまで。';
   el('result-label').textContent=race.completed?(improved?'NEW PERSONAL BEST / 自己ベスト！':'MOON RETURN / 月へ帰還'):'TO BE CONTINUED / また明日、月へ';
-  el('result-description').textContent=race.completed?`帰還タイム ${formatTime(race.time)}。月うさぎがおもちを用意して待っていました。`:`${formatHeight(resultData.height)}mまでの旅。次は手足のリズムで、もっと遠くへ。`;
+  el('result-description').textContent=race.completed?`帰還タイム ${formatTime(race.time)}。月で父と母が待っていました。おもちも、できたてです。`:`${formatHeight(resultData.height)}mまでの旅。月では父と母が、帰りを待っています。`;
   document.querySelector('.result-note')!.textContent=race.completed?'帰還タイムはこの端末に保存されます。':'未帰還の記録は、最速タイムには入りません。';
   el<HTMLDialogElement>('pause-dialog').close();el<HTMLDialogElement>('result-dialog').showModal();
 }
@@ -230,7 +230,7 @@ function frame(now:number){
     while(accumulator>=1/120){sim.step(1/120);race.afterStep();accumulator-=1/120;}
     consumeEvent(now);
     if(race.completed&&!showingResult){
-      if(!finishAt){finishAt=now+1100;releasePointers();el('game-viewport').classList.add('is-cleared');tone(true,true);}
+      if(!finishAt){finishAt=now+2500;releasePointers();el('game-viewport').classList.add('is-cleared');tone(true,true);}
       if(now>=finishAt)showResult();
     }
   }else accumulator=0;

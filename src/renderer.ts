@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BASE_HEIGHT, type ClimbSimulation, type LimbId, type Vec2 } from './simulation';
 import { BIOMES } from './biomes';
 import { MOON_HEIGHT, CHECKPOINTS } from './race';
+import { MoonFamily } from './moon-family';
 
 const IDS: LimbId[] = ['leftHand', 'rightHand', 'leftFoot', 'rightFoot'];
 const UP = new THREE.Vector3(0, 1, 0);
@@ -22,6 +23,7 @@ export class ClimbRenderer {
   private moon = new THREE.Group();
   private moonGlow!: THREE.MeshBasicMaterial;
   private landing = new THREE.Group();
+  private family = new MoonFamily();
   private milestones: { height: number; group: THREE.Group; material: THREE.MeshBasicMaterial }[] = [];
   private obiMaterial!: THREE.MeshStandardMaterial;
   private boosted = false;
@@ -45,7 +47,7 @@ export class ClimbRenderer {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.35;
     this.renderer.domElement.className = 'world-canvas';
-    this.renderer.domElement.setAttribute('aria-label', '月に向かう竹と、背中を向けて登るかぐや姫を描画する3D画面');
+    this.renderer.domElement.setAttribute('aria-label', '月に向かうかぐや姫と、月面で待つ父母を描画する3D画面');
     host.prepend(this.renderer.domElement);
     this.renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); this.onContextLost(); });
     this.renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
@@ -174,6 +176,7 @@ export class ClimbRenderer {
     }
     const landingGlow=new THREE.Mesh(new THREE.PlaneGeometry(5.7,1.5),new THREE.MeshBasicMaterial({color:0xf7e1a6,transparent:true,opacity:.10,depthWrite:false,blending:THREE.AdditiveBlending}));
     landingGlow.position.set(0,.23,-1.4); this.landing.add(landingGlow);
+    this.landing.add(this.family.group);
     this.landing.position.set(0,BASE_HEIGHT+MOON_HEIGHT-1.15,-.40); this.scene.add(this.landing);
   }
   private createMilestones() {
@@ -248,6 +251,7 @@ export class ClimbRenderer {
     this.moon.rotation.z=Math.sin(this.time*.07)*.025;
     this.moonGlow.opacity=(this.finished?.23:.13)+Math.sin(this.time*.8)*.012;
     this.landing.visible=this.sim.maxHeight>=18;
+    this.family.update(this.time,this.finished);
     for(const milestone of this.milestones) {
       const reached=this.sim.maxHeight>=milestone.height;
       milestone.material.opacity=reached?.94:.55;

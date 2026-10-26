@@ -46,13 +46,30 @@ export function drawResultCard(canvas: HTMLCanvasElement, result: RaceResult) {
   ctx.strokeStyle='#e5c26d';ctx.lineWidth=5;ctx.beginPath();ctx.arc(436,349,17,Math.PI,Math.PI*2);ctx.stroke();
   ctx.fillStyle='#a94c64';ctx.beginPath();ctx.moveTo(437,460);ctx.lineTo(403,444);ctx.lineTo(403,480);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(435,460);ctx.lineTo(470,444);ctx.lineTo(470,480);ctx.closePath();ctx.fill();
   line([[435,559],[451,559]],'#ecdcc0',15);line([[465,559],[482,559]],'#ecdcc0',15);
-  if(result.cleared){ctx.fillStyle='#efe6cf';ctx.beginPath();ctx.ellipse(660,650,180,42,0,0,Math.PI*2);ctx.fill();}
+  if(result.cleared){
+    ctx.fillStyle='#efe6cf';ctx.beginPath();ctx.ellipse(660,650,180,42,0,0,Math.PI*2);ctx.fill();
+    const drawParent=(x:number,mother:boolean)=>{
+      ctx.fillStyle=mother?'#b594bd':'#8cabb7';roundRect(ctx,x-22,552,44,75,14);
+      ctx.fillStyle=mother?'#eee1d1':'#dce6e1';roundRect(ctx,x-25,553,10,67,4);roundRect(ctx,x+15,553,10,67,4);
+      ctx.fillStyle=mother?'#cc839a':'#c5b277';roundRect(ctx,x-24,584,48,10,3);
+      ctx.fillStyle='#efcbae';ctx.beginPath();ctx.arc(x,535,21,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=mother?'#292736':'#7f8393';ctx.beginPath();ctx.arc(x,529,22,Math.PI,Math.PI*2);ctx.fill();
+      if(mother){ctx.beginPath();ctx.arc(x+12,507,12,0,Math.PI*2);ctx.fill();}
+      else{ctx.fillStyle='#e3e2dc';ctx.beginPath();ctx.moveTo(x-10,548);ctx.lineTo(x+10,548);ctx.lineTo(x,565);ctx.closePath();ctx.fill();}
+      ctx.fillStyle='#303542';for(const dx of [-7,7]){ctx.beginPath();ctx.arc(x+dx,536,2,0,Math.PI*2);ctx.fill();}
+      ctx.strokeStyle='#a96d66';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,541,6,.2,Math.PI-.2);ctx.stroke();
+      ctx.strokeStyle=mother?'#eee1d1':'#dce6e1';ctx.lineWidth=15;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+(mother?19:-19),568);ctx.lineTo(x+(mother?34:-34),551);ctx.lineTo(x+(mother?32:-32),528);ctx.stroke();
+      ctx.fillStyle='#efcbae';ctx.beginPath();ctx.arc(x+(mother?32:-32),523,7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e3c578';ctx.beginPath();ctx.arc(x,521,7,Math.PI,Math.PI*2);ctx.lineWidth=3;ctx.strokeStyle='#e3c578';ctx.stroke();
+    };
+    drawParent(610,false);drawParent(744,true);
+  }
   ctx.restore();
   ctx.fillStyle='#333c43';ctx.font='17px monospace';ctx.fillText(result.cleared?'MOON RETURN / 月まで帰還':'TO BE CONTINUED / 今回の旅',64,709);
   const numeral=result.cleared?formatTime(result.time):`${formatHeight(result.height)} / ${MOON_HEIGHT}m`;
   ctx.font='bold 113px sans-serif';const width=ctx.measureText(numeral).width;if(width>780)ctx.font=`bold ${113*780/width}px sans-serif`;ctx.fillText(numeral,56,842);
   ctx.font='bold 32px sans-serif';ctx.fillText(resultTitle(result),64,914);
-  ctx.font='22px sans-serif';ctx.fillStyle='#717264';ctx.fillText(result.cleared?'ただいま、月。……明日は筋肉痛ですね。':'迎えを待つより、もうひと登り。',64,960);
+  ctx.font='22px sans-serif';ctx.fillStyle='#717264';ctx.fillText(result.cleared?'「おかえり」月で父と母が待っていました。':'月では父と母が、帰りを待っています。',64,960);
   ctx.font='19px monospace';ctx.fillStyle='#565b58';ctx.fillText(`追い風 ${result.boosts}回   救出 ${result.falls}回（+${result.falls*5}秒）`,64,1012);
   ctx.strokeStyle='#bdbca8';ctx.beginPath();ctx.moveTo(62,1050);ctx.lineTo(838,1050);ctx.stroke();
   ctx.font='19px monospace';ctx.fillText(result.best!==null?`PERSONAL BEST  ${formatTime(result.best)}`:'月への旅は、まだこれから。',64,1097);

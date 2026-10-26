@@ -19,7 +19,7 @@ const STORIES = [
   { title: '竹林を抜けた！', text: 'かぐや「迎えの車、竹だったの？」 次は雲の上へ。' },
   { title: '雲の上でひと休み', text: '地上のおじいさんが手を振っている。たぶん。雲より上！' },
   { title: '宇宙まで来ちゃった', text: 'かぐや「宇宙服より先に、袖を何とかしたい」 月の灯りが近づいてきた。' },
-  { title: '月うさぎから入電', text: '「おもち、もうすぐ焼けます」 ラストスパート！' },
+  { title: '月の父母から入電', text: '「灯りをつけて待っているよ」 両親と月うさぎが、もうそこに。' },
 ] as const;
 
 export function formatTime(seconds: number): string {
@@ -113,7 +113,7 @@ export class MoonRace {
       this.combo = 0;
       this.splits.push(this.time);
       this.sim.finish();
-      this.emit('finish', 'おかえり、かぐや姫！', '月うさぎ「おもち、間に合いました！」 月への帰宅タイムが確定しました。');
+      this.emit('finish', 'おかえり、かぐや！', '父と母が手を振ってお出迎え。月うさぎも、できたてのおもちで歓迎！');
       return;
     }
 
