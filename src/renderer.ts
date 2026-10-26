@@ -63,7 +63,7 @@ export class ClimbRenderer {
     for (const id of IDS) {
       const handle = document.createElement('button'); handle.className = 'limb-handle gripped'; handle.dataset.limb = id;
       const isHand = id.includes('Hand'); const left = id.startsWith('left');
-      handle.innerHTML = `<span class="handle-dot">${isHand ? '✳' : '⌁'}</span><span class="handle-label">${left ? '左' : '右'}${isHand ? '手' : '足'}</span>`;
+      handle.innerHTML = `<span class="handle-label">${left ? '左' : '右'}${isHand ? '手' : '足'}</span>`;
       handle.setAttribute('aria-label', `${left ? '左' : '右'}${isHand ? '手' : '足'}。ドラッグ、または選択して矢印キーで移動、Enterでつかむ`);
       this.handles[id] = handle; host.append(handle);
     }
@@ -202,14 +202,15 @@ export class ClimbRenderer {
     mesh.position.copy(a).add(b).multiplyScalar(.5); const delta=b.clone().sub(a); mesh.scale.y=delta.length(); mesh.quaternion.setFromUnitVectors(UP,delta.normalize());
   }
   resetCamera():void {
-    this.cameraY=Math.max(2.8,this.sim.body.y+1.15);
+    const lead=Math.min(.9,this.halfHeight-2.1);
+    this.cameraY=Math.max(BASE_HEIGHT+lead,this.sim.body.y+lead);
     this.update(0);
   }
   resize() {
     const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;
-    this.halfHeight = w<500 ? 3.9 : 4.1;
+    this.halfHeight = Math.max(2.45,Math.min(3.9,h/130));
     const aspect=w/h;this.camera.left=-this.halfHeight*aspect;this.camera.right=this.halfHeight*aspect;this.camera.top=this.halfHeight;this.camera.bottom=-this.halfHeight;
-    this.camera.updateProjectionMatrix();this.renderer.setSize(w,h);
+    this.camera.updateProjectionMatrix();this.renderer.setSize(w,h);this.resetCamera();
   }
   screenToWorld(clientX:number,clientY:number):Vec2 {
     const box=this.host.getBoundingClientRect();temp.set((clientX-box.left)/box.width*2-1,-(clientY-box.top)/box.height*2+1,0).unproject(this.camera);
@@ -229,7 +230,8 @@ export class ClimbRenderer {
   }
   update(dt:number) {
     this.time+=dt;
-    const targetY=Math.max(2.8,this.sim.body.y+1.15);
+    const lead=Math.min(.9,this.halfHeight-2.1);
+    const targetY=Math.max(BASE_HEIGHT+lead,this.sim.body.y+lead);
     this.cameraY+=(targetY-this.cameraY)*(1-Math.exp(-dt*4));
     this.camera.position.set(0,this.cameraY,12);this.camera.lookAt(0,this.cameraY,0);this.camera.updateMatrixWorld();
     const base=Math.floor(this.cameraY/2.2)-4;
@@ -270,7 +272,9 @@ export class ClimbRenderer {
       if(!limb.gripped) midpoint.x+=Math.sin(this.time*5+(hand?0:2))* .07;
       const meshes=this.limbs[id];this.bone(meshes.upper,root,midpoint);this.bone(meshes.lower,midpoint,end);meshes.joint.position.copy(midpoint);meshes.end.position.copy(end);
       const p=end.clone().project(this.camera); const handle=this.handles[id];
-      handle.style.left=`calc(${(p.x*.5+.5)*100}% + ${side*24}px)`;handle.style.top=`${(-p.y*.5+.5)*100}%`;
+      const handleX=THREE.MathUtils.clamp((p.x*.5+.5)*this.host.clientWidth+side*24,24,this.host.clientWidth-24);
+      const handleY=THREE.MathUtils.clamp((-p.y*.5+.5)*this.host.clientHeight,24,this.host.clientHeight-24);
+      handle.style.left=`${handleX}px`;handle.style.top=`${handleY}px`;
       handle.classList.toggle('gripped',limb.gripped);handle.classList.toggle('dragging',limb.dragging);handle.classList.toggle('strained',limb.strain>.7);
       handle.disabled=this.sim.status!=='playing'&&this.sim.status!=='falling';
       handle.style.visibility=Math.abs(p.y)>1.1||Math.abs(p.x)>1.1?'hidden':'visible';

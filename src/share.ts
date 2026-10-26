@@ -21,8 +21,8 @@ export function drawResultCard(canvas: HTMLCanvasElement, result: RaceResult) {
   ctx.strokeStyle = '#dedbcb'; ctx.lineWidth = 1;
   for(let x=0;x<900;x+=45){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,1200);ctx.stroke();}
   for(let y=0;y<1200;y+=45){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(900,y);ctx.stroke();}
-  ctx.fillStyle = '#333c43'; ctx.font = 'bold 31px sans-serif'; ctx.fillText('グニャマスト', 62, 83);
-  ctx.font = '19px sans-serif'; ctx.fillText('かぐや、月へ帰る。', 581, 81);
+  ctx.fillStyle = '#333c43'; ctx.font = 'bold 36px sans-serif'; ctx.fillText('グニャマスト', 62, 83);
+  ctx.font = '32px sans-serif'; ctx.fillText('かぐや、月へ帰る', 550, 81);
   ctx.strokeStyle='#ada987';ctx.beginPath();ctx.moveTo(62,113);ctx.lineTo(838,113);ctx.stroke();
   const sky=ctx.createLinearGradient(0,145,0,670);sky.addColorStop(0,'#191f3e');sky.addColorStop(1,result.cleared?'#655c80':biome.color);
   ctx.fillStyle=sky;roundRect(ctx,62,145,776,510,7);
@@ -65,15 +65,15 @@ export function drawResultCard(canvas: HTMLCanvasElement, result: RaceResult) {
     drawParent(610,false);drawParent(744,true);
   }
   ctx.restore();
-  ctx.fillStyle='#333c43';ctx.font='17px monospace';ctx.fillText(result.cleared?'MOON RETURN / 月まで帰還':'TO BE CONTINUED / 今回の旅',64,709);
+  ctx.fillStyle='#333c43';ctx.font='36px sans-serif';ctx.fillText(result.cleared?'月へ帰還':'今回の旅',64,715);
   const numeral=result.cleared?formatTime(result.time):`${formatHeight(result.height)} / ${MOON_HEIGHT}m`;
-  ctx.font='bold 113px sans-serif';const width=ctx.measureText(numeral).width;if(width>780)ctx.font=`bold ${113*780/width}px sans-serif`;ctx.fillText(numeral,56,842);
-  ctx.font='bold 32px sans-serif';ctx.fillText(resultTitle(result),64,914);
-  ctx.font='22px sans-serif';ctx.fillStyle='#717264';ctx.fillText(result.cleared?'「おかえり」月で父と母が待っていました。':'月では父と母が、帰りを待っています。',64,960);
-  ctx.font='19px monospace';ctx.fillStyle='#565b58';ctx.fillText(`追い風 ${result.boosts}回   救出 ${result.falls}回（+${result.falls*5}秒）`,64,1012);
+  ctx.font='bold 136px sans-serif';const width=ctx.measureText(numeral).width;if(width>780)ctx.font=`bold ${136*780/width}px sans-serif`;ctx.fillText(numeral,56,850);
+  ctx.font='bold 38px sans-serif';ctx.fillText(resultTitle(result),64,915);
+  ctx.font='32px sans-serif';ctx.fillStyle='#717264';ctx.fillText(result.cleared?'父と母が、お出迎え。':'月では家族が待っています。',64,963);
+  ctx.font='30px sans-serif';ctx.fillStyle='#565b58';ctx.fillText(`追い風 ${result.boosts}回 ／ 救出 ${result.falls}回${result.falls?`（＋${result.falls*5}秒）`:''}`,64,1012);
   ctx.strokeStyle='#bdbca8';ctx.beginPath();ctx.moveTo(62,1050);ctx.lineTo(838,1050);ctx.stroke();
-  ctx.font='19px monospace';ctx.fillText(result.best!==null?`PERSONAL BEST  ${formatTime(result.best)}`:'月への旅は、まだこれから。',64,1097);
-  ctx.font='20px sans-serif';ctx.fillText('#グニャマスト #かぐや月へ帰る',64,1141);
+  ctx.font='32px sans-serif';ctx.fillText(result.best!==null?`自己ベスト ${formatTime(result.best)}`:'月への旅は、まだこれから。',64,1097);
+  ctx.font='30px sans-serif';ctx.fillText('#グニャマスト #かぐや月へ帰る',64,1150);
 }
 
 export const resultBlob=(canvas:HTMLCanvasElement)=>new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('カードを作れませんでした')),'image/png'));

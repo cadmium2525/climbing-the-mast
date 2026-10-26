@@ -16,10 +16,10 @@ export type RaceEvent = {
 };
 
 const STORIES = [
-  { title: '竹林を抜けた！', text: 'かぐや「迎えの車、竹だったの？」 次は雲の上へ。' },
-  { title: '雲の上でひと休み', text: '地上のおじいさんが手を振っている。たぶん。雲より上！' },
-  { title: '宇宙まで来ちゃった', text: 'かぐや「宇宙服より先に、袖を何とかしたい」 月の灯りが近づいてきた。' },
-  { title: '月の父母から入電', text: '「灯りをつけて待っているよ」 両親と月うさぎが、もうそこに。' },
+  { title: '竹林を抜けた！', text: '迎えの代わりに、竹で帰ります。' },
+  { title: '雲の上！', text: 'おじいさん、見えますか？' },
+  { title: '天の川へ！', text: '月の灯りが近づいてきた。' },
+  { title: '父と母が待ってる', text: 'あと3m。もうひと登り！' },
 ] as const;
 
 export function formatTime(seconds: number): string {
@@ -113,7 +113,7 @@ export class MoonRace {
       this.combo = 0;
       this.splits.push(this.time);
       this.sim.finish();
-      this.emit('finish', 'おかえり、かぐや！', '父と母が手を振ってお出迎え。月うさぎも、できたてのおもちで歓迎！');
+      this.emit('finish', 'おかえり、かぐや！', '父と母も、月うさぎも、お出迎え。');
       return;
     }
 
@@ -128,13 +128,13 @@ export class MoonRace {
       this.combo = 0;
       this.previousType = null;
       this.rememberStance();
-      this.emit('rescue', '月うさぎがキャッチ！ ＋5秒', `${this.checkpoint === 0 ? '竹のふもと' : `中継地点 ${this.checkpoint} m`}から再出発。転んでも、月は逃げない。`);
+      this.emit('rescue', '救出！ ＋5秒', `${this.checkpoint === 0 ? '竹のふもと' : `${this.checkpoint}m`}から再出発。`);
       return;
     }
 
     // A save point matters more than a simultaneous story beat.
     if (checkpointChanged) {
-      this.emit('checkpoint', `${this.checkpoint} m 中継地点に到着`, 'ここまでの登りを保存！ 落ちてもここから。月うさぎが見守っています。');
+      this.emit('checkpoint', `${this.checkpoint}m 保存`, '落ちても、ここから再出発。');
     } else if (stageChanged) {
       const story = STORIES[this.stage - 1];
       this.emit('story', story.title, story.text);
@@ -165,7 +165,7 @@ export class MoonRace {
     this.translate(BOOST_DISTANCE);
     for (const other of LIMB_IDS) this.creditedHeight[other] += BOOST_DISTANCE;
     this.boosts++;
-    this.emit('boost', '手・足・手・足！ 羽衣の追い風', 'リズムよく4回つかんで、ぐんっと上昇！');
+    this.emit('boost', '追い風！', '0.8m 上昇');
     this.afterStep();
   }
 

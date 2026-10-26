@@ -22,6 +22,7 @@ let lastBiome=-1;
 let lastEvent=0;
 let lastBoosts=0;
 let toastUntil=0;
+let statusUntil=0;
 let boostUntil=0;
 let finishAt=0;
 let soundEnabled=false;
@@ -45,7 +46,11 @@ function flushActiveClock(){
   if(!dialogs.some(dialog=>dialog.open)){race.tick(delta);accumulator+=Math.min(delta,.05);}
   previous=now;
 }
-const message=(text:string)=>{el('status-message').textContent=text;};
+const message=(text:string)=>{
+  el('status-message').textContent=text;
+  statusUntil=text?performance.now()+1800:0;
+  el('status-message').classList.toggle('is-visible',!!text);
+};
 function tone(success:boolean,magic=false){
   if(!soundEnabled)return;
   try{
@@ -59,6 +64,7 @@ function tone(success:boolean,magic=false){
 }
 function releasePointers(){sim.cancelDrags();pointers.clear();keyboardTargets.clear();}
 function showStory(title:string,text:string,now=performance.now()){
+  message('');
   el('story-title').textContent=title;el('story-text').textContent=text;toastUntil=now+4500;
   el('story-toast').classList.add('is-visible');
 }
@@ -69,9 +75,9 @@ function consumeEvent(now:number){
   let text=event.text;
   if(event.kind==='story'&&best&&race.stage>0){
     const split=race.splits[race.stage-1],old=best.splits[race.stage-1];
-    if(Number.isFinite(split)&&Number.isFinite(old))text+=` 自己ベストより${formatTime(Math.abs(split-old))}${split<=old?'速い！':'、ここから挽回。'}`;
+    if(Number.isFinite(split)&&Number.isFinite(old))text=`ベスト比 ${split<=old?'−':'＋'}${Math.abs(split-old).toFixed(1)}秒`;
   }
-  if(event.kind==='rescue'){releasePointers();view?.resetCamera();message('中継地点から再出発。手と足を交互に、羽衣の追い風を。');tone(false);}
+  if(event.kind==='rescue'){releasePointers();view?.resetCamera();message('');tone(false);}
   showStory(event.title,text,now);
 }
 function updateUI(now=performance.now()){
@@ -79,7 +85,8 @@ function updateUI(now=performance.now()){
   el('time-value').textContent=formatTime(race.time);
   el('remaining-value').textContent=`${formatHeight(MOON_HEIGHT-sim.height)}m`;
   el<HTMLProgressElement>('moon-progress').value=race.progress*MOON_HEIGHT;
-  el('penalty-value').textContent=`救出 +${race.penalties}秒`;
+  el('penalty-value').textContent=`救出 ＋${race.penalties}秒`;
+  el('penalty-value').hidden=race.penalties===0;
   el('combo-value').textContent=`${race.combo} / 4`;
   el('combo-meter').dataset.combo=String(race.combo);
   const nextCheckpoint=CHECKPOINTS.find(height=>height>race.checkpoint);
@@ -97,6 +104,7 @@ function updateUI(now=performance.now()){
     grip.setAttribute('aria-label',`${id.startsWith('left')?'左':'右'}${id.endsWith('Hand')?'手':'足'}：${limb.gripped?'つかまり中':'離している'}`);
   }
   if(now>toastUntil)el('story-toast').classList.remove('is-visible');
+  if(now>statusUntil)el('status-message').classList.remove('is-visible');
 }
 function start(){
   if(!view)return;
@@ -104,8 +112,8 @@ function start(){
   showingResult=false;resultData=null;finishAt=0;lastBiome=-1;lastBoosts=0;boostUntil=0;resetClock();
   document.body.classList.add('is-playing');el('game-viewport').classList.remove('is-cleared');
   view.resetCamera();
-  message('まず手、その次は足。少し上へ、交互につかもう。');
-  showStory('迎えが来ない。なら、登ろう。','かぐや姫の帰宅レース。手→足→手→足で、羽衣の追い風！');
+  message('手足の丸を上へドラッグ');
+  el('story-toast').classList.remove('is-visible');toastUntil=0;
   updateUI();requestAnimationFrame(()=>view?.resize());
 }
 function showResult(){
@@ -118,10 +126,11 @@ function showResult(){
   el('best-value').textContent=best?formatTime(best.time):'—';
   resultData={cleared:race.completed,time:race.time,height:Math.min(MOON_HEIGHT,sim.maxHeight),falls:race.falls,boosts:race.boosts,best:best?.time??null};
   drawResultCard(el<HTMLCanvasElement>('result-card'),resultData);
-  el('result-title').textContent=race.completed?'おかえり、かぐや姫。':'今日は、ここまで。';
-  el('result-label').textContent=race.completed?(improved?'NEW PERSONAL BEST / 自己ベスト！':'MOON RETURN / 月へ帰還'):'TO BE CONTINUED / また明日、月へ';
-  el('result-description').textContent=race.completed?`帰還タイム ${formatTime(race.time)}。月で父と母が待っていました。おもちも、できたてです。`:`${formatHeight(resultData.height)}mまでの旅。月では父と母が、帰りを待っています。`;
-  document.querySelector('.result-note')!.textContent=race.completed?'帰還タイムはこの端末に保存されます。':'未帰還の記録は、最速タイムには入りません。';
+  el('result-title').textContent=race.completed?'おかえり、かぐや。':'今日は、ここまで。';
+  el('result-value').textContent=race.completed?formatTime(race.time):`月まで ${formatHeight(MOON_HEIGHT-resultData.height)}m`;
+  el('result-label').textContent=race.completed?(improved?'自己ベスト！':'月へ帰還'):'また挑戦しよう';
+  el('result-description').textContent=race.completed?'父と母が待っていました。':'次は、月で待つ家族のもとへ。';
+  document.querySelector('.result-note')!.textContent=race.completed?'最速タイムを保存しました。':'リタイアは最速記録に入りません。';
   el<HTMLDialogElement>('pause-dialog').close();el<HTMLDialogElement>('result-dialog').showModal();
 }
 function pause(){
@@ -132,7 +141,7 @@ function pause(){
 function finishGrip(id:LimbId,previousY:number){
   flushActiveClock();
   const success=sim.endDrag(id);race.recordGrip(id,previousY,success);tone(success);
-  message(!success?'届かなかった！ 竹の近く、無理のない位置へ。':race.combo>0?`いいリズム！ あと${4-race.combo}回、手と足を交互に。`:'つかめた！ 次は手と足を交互に運ぼう。');
+  message(success?'':'竹の近くで離そう');
   consumeEvent(performance.now());
 }
 
@@ -150,7 +159,6 @@ try{
       event.preventDefault();handle.setPointerCapture(event.pointerId);
       const point=view.screenToWorld(event.clientX,event.clientY);
       pointers.set(event.pointerId,{id,previousY:sim.limbs[id].pos.y,offset:{x:sim.limbs[id].pos.x-point.x,y:sim.limbs[id].pos.y-point.y}});
-      message('少し上の竹へ。丸が追いついたら指を離そう。');
     });
     handle.addEventListener('pointermove',event=>{
       const pointer=pointers.get(event.pointerId);if(!pointer||!view||paused())return;
@@ -168,7 +176,7 @@ try{
       if(event.key===' '||event.key==='Enter'){
         event.preventDefault();const target=keyboardTargets.get(id);
         if(target){finishGrip(id,target.previousY);keyboardTargets.delete(id);}
-        else if(sim.beginDrag(id)){keyboardTargets.set(id,{point:{...sim.limbs[id].pos},previousY:sim.limbs[id].pos.y});message('矢印で動かし、Enterでつかまる。');}
+        else if(sim.beginDrag(id)){keyboardTargets.set(id,{point:{...sim.limbs[id].pos},previousY:sim.limbs[id].pos.y});message('矢印で動かし、Enterでつかむ');}
       }else if(event.key.startsWith('Arrow')){
         event.preventDefault();if(!keyboardTargets.has(id)&&sim.beginDrag(id))keyboardTargets.set(id,{point:{...sim.limbs[id].pos},previousY:sim.limbs[id].pos.y});
         const target=keyboardTargets.get(id);if(!target)return;
@@ -192,13 +200,14 @@ for(const dialog of dialogs)dialog.addEventListener('close',resetClock);
 el<HTMLDialogElement>('result-dialog').addEventListener('cancel',event=>event.preventDefault());
 el('sound-button').addEventListener('click',()=>{
   soundEnabled=!soundEnabled;el('sound-button').setAttribute('aria-pressed',String(soundEnabled));
-  el('sound-button').querySelector('span')!.textContent=`音 ${soundEnabled?'ON':'OFF'}`;tone(true);
+  const soundLabel=el('sound-button').querySelector('span');if(soundLabel)soundLabel.textContent=`音 ${soundEnabled?'ON':'OFF'}`;
+  el('sound-button').setAttribute('aria-label',soundEnabled?'音を消す':'音を出す');tone(true);
   el('sound-button').querySelector('svg path:last-child')!.setAttribute('d',soundEnabled?'M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12':'m16 9 5 6m0-6-5 6');
 });
 el('save-button').addEventListener('click',async()=>{
   if(!resultData)return;
-  try{await saveCard(el<HTMLCanvasElement>('result-card'),resultData);document.querySelector('.result-note')!.textContent='保存したカードを、好きなSNSに添付できます。';}
-  catch{document.querySelector('.result-note')!.textContent='カードを保存できませんでした。もう一度お試しください。';}
+  try{await saveCard(el<HTMLCanvasElement>('result-card'),resultData);document.querySelector('.result-note')!.textContent='画像を保存しました。';}
+  catch{document.querySelector('.result-note')!.textContent='保存できません。もう一度お試しください。';}
 });
 el('share-button').addEventListener('click',async()=>{
   if(!resultData)return;
@@ -209,15 +218,15 @@ el('share-button').addEventListener('click',async()=>{
     else if(navigator.share)await navigator.share({title:'グニャマスト',text:shareText(resultData),url:pageUrl()});
     else{
       await saveCard(el<HTMLCanvasElement>('result-card'),resultData);
-      try{await navigator.clipboard.writeText(`${shareText(resultData)}\n${pageUrl()}`);document.querySelector('.result-note')!.textContent='カードを保存し、投稿文をコピーしました。SNSに貼り付けてシェア！';}
-      catch{document.querySelector('.result-note')!.textContent='カードを保存しました。「Xに投稿する」から記録をシェアできます。';}
+      try{await navigator.clipboard.writeText(`${shareText(resultData)}\n${pageUrl()}`);document.querySelector('.result-note')!.textContent='画像を保存し、投稿文をコピーしました。';}
+      catch{document.querySelector('.result-note')!.textContent='画像を保存しました。SNSに添付できます。';}
     }
-  }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))document.querySelector('.result-note')!.textContent='共有できませんでした。「カードを保存」から画像を保存できます。';}
+  }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))document.querySelector('.result-note')!.textContent='共有できません。画像を保存できます。';}
   finally{button.disabled=false;}
 });
 el('x-share-button').addEventListener('click',()=>{
   if(!resultData)return;const params=new URLSearchParams({text:shareText(resultData),url:pageUrl()});window.open(`https://twitter.com/intent/tweet?${params}`,'_blank','noopener,noreferrer');
-  document.querySelector('.result-note')!.textContent='画像も載せるなら、保存したカードを投稿に添付してください。';
+  document.querySelector('.result-note')!.textContent='保存した画像をXに添付できます。';
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();resetClock();});
 window.addEventListener('blur',()=>{if(sim.status==='playing'||sim.status==='falling')pause();});
