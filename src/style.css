@@ -138,7 +138,6 @@ h1 { font-size: clamp(26px, 6.8vw, 32px); line-height: 1.35; letter-spacing: -.0
 .result-card-wrap { justify-self: center; width: min(160px, 16.5dvh); overflow: hidden; border-radius: 6px; box-shadow: 0 2px 14px #16392c15; }
 #result-card { display: block; width: 100%; height: auto; }
 .result-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.x-share-button { grid-column: 1 / -1; }
 .retry-button { margin-top: 8px; border-color: #647a55; background: #e8eddb; font-size: 18px; }
 .retry-button:hover { background: #dfe7cc; }
 .result-note { margin-top: 10px; color: var(--ink-soft); font-size: 16px; line-height: 1.4; text-align: center; }

@@ -17,6 +17,7 @@ const BEST_KEY='gunyamast-moon-best-v1';
 type BestRecord={time:number;splits:number[]};
 let best:BestRecord|null=null;
 let resultData:RaceResult|null=null;
+let resultFile:File|null=null;
 let showingResult=false;
 let lastBiome=-1;
 let lastEvent=0;
@@ -109,7 +110,7 @@ function updateUI(now=performance.now()){
 function start(){
   if(!view)return;
   dialogs.forEach(dialog=>dialog.close());releasePointers();race.reset();race.start();
-  showingResult=false;resultData=null;finishAt=0;lastBiome=-1;lastBoosts=0;boostUntil=0;resetClock();
+  showingResult=false;resultData=null;resultFile=null;finishAt=0;lastBiome=-1;lastBoosts=0;boostUntil=0;resetClock();
   document.body.classList.add('is-playing');el('game-viewport').classList.remove('is-cleared');
   view.resetCamera();
   message('手足の丸を上へドラッグ');
@@ -126,6 +127,12 @@ function showResult(){
   el('best-value').textContent=best?formatTime(best.time):'—';
   resultData={cleared:race.completed,time:race.time,height:Math.min(MOON_HEIGHT,sim.maxHeight),falls:race.falls,boosts:race.boosts,best:best?.time??null};
   drawResultCard(el<HTMLCanvasElement>('result-card'),resultData);
+  const currentResult=resultData;
+  resultFile=null;
+  // Encode before the tap: Web Share must run directly in the user's gesture.
+  void resultBlob(el<HTMLCanvasElement>('result-card')).then(blob=>{
+    if(resultData===currentResult)resultFile=new File([blob],'gunyamast-kaguya.png',{type:'image/png'});
+  }).catch(()=>{/* Text sharing remains available if image encoding fails. */});
   el('result-title').textContent=race.completed?'おかえり、かぐや。':'今日は、ここまで。';
   el('result-value').textContent=race.completed?formatTime(race.time):`月まで ${formatHeight(MOON_HEIGHT-resultData.height)}m`;
   el('result-label').textContent=race.completed?(improved?'自己ベスト！':'月へ帰還'):'また挑戦しよう';
@@ -213,20 +220,18 @@ el('share-button').addEventListener('click',async()=>{
   if(!resultData)return;
   const button=el<HTMLButtonElement>('share-button');button.disabled=true;
   try{
-    const file=new File([await resultBlob(el<HTMLCanvasElement>('result-card'))],'gunyamast-kaguya.png',{type:'image/png'});
-    if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'グニャマスト — かぐや、月へ帰る',text:`${shareText(resultData)}\n${pageUrl()}`});
-    else if(navigator.share)await navigator.share({title:'グニャマスト',text:shareText(resultData),url:pageUrl()});
+    if(navigator.share){
+      if(resultFile&&navigator.canShare?.({files:[resultFile]}))await navigator.share({files:[resultFile],title:'グニャマスト — かぐや、月へ帰る',text:`${shareText(resultData)}\n${pageUrl()}`});
+      else await navigator.share({title:'グニャマスト',text:shareText(resultData),url:pageUrl()});
+    }
     else{
+      // Clipboard permission also needs the tap, so start it before saving.
+      const copied=navigator.clipboard?.writeText(`${shareText(resultData)}\n${pageUrl()}`).then(()=>true,()=>false)??Promise.resolve(false);
       await saveCard(el<HTMLCanvasElement>('result-card'),resultData);
-      try{await navigator.clipboard.writeText(`${shareText(resultData)}\n${pageUrl()}`);document.querySelector('.result-note')!.textContent='画像を保存し、投稿文をコピーしました。';}
-      catch{document.querySelector('.result-note')!.textContent='画像を保存しました。SNSに添付できます。';}
+      document.querySelector('.result-note')!.textContent=await copied?'画像を保存し、投稿文をコピーしました。':'画像を保存しました。SNSに添付できます。';
     }
   }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))document.querySelector('.result-note')!.textContent='共有できません。画像を保存できます。';}
   finally{button.disabled=false;}
-});
-el('x-share-button').addEventListener('click',()=>{
-  if(!resultData)return;const params=new URLSearchParams({text:shareText(resultData),url:pageUrl()});window.open(`https://twitter.com/intent/tweet?${params}`,'_blank','noopener,noreferrer');
-  document.querySelector('.result-note')!.textContent='保存した画像をXに添付できます。';
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();resetClock();});
 window.addEventListener('blur',()=>{if(sim.status==='playing'||sim.status==='falling')pause();});
